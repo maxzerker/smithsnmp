@@ -20,7 +20,6 @@
 --
 
 local core = require "smithsnmp.core"
-local inspect = require "inspect"
 
 local _M = {}
 _M.core = core
