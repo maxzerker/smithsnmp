@@ -2,6 +2,7 @@
 -- This file is part of SmithSNMP
 -- Copyright (C) 2014, Credo Semiconductor Inc.
 -- Copyright (C) 2015, Leo Ma <begeekmyfriend@gmail.com>
+-- Copyright (C) 2017, Hemmarit Hema <maxzerker@hotmail.com>
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,6 +20,7 @@
 --
 
 local core = require "smithsnmp.core"
+local inspect = require "inspect"
 
 local _M = {}
 _M.core = core
@@ -314,17 +316,22 @@ local mib_group_indexes_generate = function (group, name)
 
                     -- indexes
                     assert(entry.indexes ~= nil, string.format("%s[%d][%d]: What is the entry.indexes?", name, obj_no, entry_no))
-                    assert(type(entry.indexes) == 'table', string.format("%s[%d][%d]: Entry indexes must be table", name, obj_no, entry_no))
-
-                    if entry.indexes.cascade == true then
-                        for _, indexes in ipairs(entry.indexes) do
+					-- execute a function for dynamic length entry
+					if type(entry.indexes) == 'function' then 
+						dynamic_indexes, err_indexes = entry.indexes()
+					else 
+						dynamic_indexes = entry.indexes
+					end
+					assert(type(dynamic_indexes) == 'table', string.format("%s[%d][%d]: Entry indexes must be table", name, obj_no, entry_no))
+                    if dynamic_indexes.cascade == true then
+                        for _, indexes in ipairs(dynamic_indexes) do
                             table.sort(indexes)
                             table.insert(table_indexes, indexes)
                         end
                     else
-                        assert(entry.indexes.cascade == nil, string.format("%s[%d][%d]: No need to write \'cascade == false\' if indexes not cascaded, just wipe it out!", name, obj_no, entry_no))
+                        assert(dynamic_indexes.cascade == nil, string.format("%s[%d][%d]: No need to write \'cascade == false\' if indexes not cascaded, just wipe it out!", name, obj_no, entry_no))
                         local dim4 = {}
-                        for key in pairs(entry.indexes) do
+                        for key in pairs(dynamic_indexes) do
                             local index
                             -- index type
                             if type(key) == 'string' then
